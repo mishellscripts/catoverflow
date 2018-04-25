@@ -10,6 +10,16 @@ use Illuminate\Support\Facades\Log;
 
 class HomeController extends Controller
 {
+    /*
+    |--------------------------------------------------------------------------
+    | Home Controller
+    |--------------------------------------------------------------------------
+    |
+    | This controller handles requests for displaying the application dashboard
+    | and checks that user is authenticated and has valid API token.
+    |
+    */
+
     /**
      * Create a new controller instance.
      *
