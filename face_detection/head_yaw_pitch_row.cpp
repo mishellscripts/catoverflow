@@ -19,7 +19,7 @@ using namespace cv;
 std::vector<Dual_Points> head_pose_estimation(std::vector<full_object_detection> &shapes, Mat &img)
 {
     std::vector<std::vector<cv::Point2d>> faces;
-    //std::vector<std::vector<cv::Point3d>> models;
+    // create a 3d model in world coordinate for the head
     std::vector<cv::Point3d> model;
     model.push_back(cv::Point3d(0.0f, 0.0f, 0.0f));
     model.push_back(cv::Point3d(0.0f, -330.0f, -65.0f));
