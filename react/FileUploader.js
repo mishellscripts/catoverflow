@@ -3,34 +3,42 @@ import ReactDOM from 'react-dom';
 import axios, { post } from 'axios';
 import { status } from '../util/status';
 
+// FileUploader allow user to name and upload a video 
 export default class FileUploader extends Component {
     constructor(props) {
       super(props);
       this.state = {
-        video: null,
-        status: status.WAITING,
-        error: '',
+          video: null,
+          status: status.WAITING,
+          error: '',
       };
       this.handleSubmit = this.handleSubmit.bind(this);
       this.fileUpload = this.fileUpload.bind(this);
       this.fileChange = this.fileChange.bind(this);
     }
 
+    // Upload file when submit button is clicked
     handleSubmit(e) {
       e.preventDefault();
       this.setState({ status: status.FETCHING });
-      if (this.state.video.size <= 2000000) {
+      // check file size
+      if (this.state.video.size > 2000000) {
+          this.setState({
+              status: status.FAILURE,
+              error: 'File size too large. Max file size is 2 MB.'
+          });
+      } else {
           this.fileUpload(e.target.name.value, this.state.video).then((response) => {
               console.log(response.data);
               this.setState({ status: status.SUCCESSFUL });
               this.props.handleSuccess();
           })
           .catch( (error) => {
-            // console.log(error);
-            this.setState({ status: status.FAILURE, error: error.response.data });
+              this.setState({
+                  status: status.FAILURE,
+                  error: error.response.data
+              });
           });
-      } else {
-          this.setState({ status: status.FAILURE, error: 'File size too large. Max file size is 2 MB.' });
       }
     }
 
@@ -48,11 +56,11 @@ export default class FileUploader extends Component {
       return post(url, formData, config)
     }
 
+    // update video when a file uploaded
     fileChange (e) {
-      //console.log(e.target.files[0]);
-      this.setState({
-        video: e.target.files[0]
-      });
+        this.setState({
+            video: e.target.files[0]
+        });
     }
 
     render() {
@@ -120,6 +128,7 @@ export default class FileUploader extends Component {
     }
 }
 
+// Allow props to be passed from outside
 if (document.getElementById('FileUploader')) {
     const element = document.getElementById('FileUploader');
     const props = Object.assign({}, element.dataset);

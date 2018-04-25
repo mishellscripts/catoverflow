@@ -6,6 +6,7 @@ import moment from 'moment';
 import Moment from 'react-moment';
 import 'moment-timezone';
 
+// VideoList shows a list of videos the user owns
 export default class VideoList extends Component {
     constructor(props) {
         super(props);
@@ -16,20 +17,22 @@ export default class VideoList extends Component {
         this.handleDelete = this.handleDelete.bind(this);
     }
 
+    // Delete video
     handleDelete(e) {
         e.preventDefault();
         this.setState({ deleting: status.FETCHING, id: e.target.id });
         this.deleteVideo(e.target.id).then((response) => {
             this.setState({ deleting: status.SUCCESSFUL });
+            // tell Home component to update the video list
             this.props.updateVideoList();
         })
         .catch( (error) => {
-            console.log(error);            
+            console.log(error);
             this.setState({ deleting: status.FAILURE });
         });
     }
-    
 
+    // This return an Axios request to delete video based on video id
     deleteVideo(id) {
         const url = 'http://localhost:8000/api/deleteOriginalVideo';
         const formData = new FormData();
@@ -69,9 +72,9 @@ export default class VideoList extends Component {
                               className="btn btn-danger btn-sm"
                               onClick={this.handleDelete.bind(this)}
                             >
-                                <i 
-                                  className="fa fa-spinner fa-spin" 
-                                  hidden={this.state.deleting !== status.FETCHING || this.state.id != video.id} 
+                                <i
+                                  className="fa fa-spinner fa-spin"
+                                  hidden={this.state.deleting !== status.FETCHING || this.state.id != video.id}
                                 />
                                 <div
                                   hidden={this.state.deleting === status.FETCHING && this.state.id == video.id}
@@ -120,6 +123,7 @@ export default class VideoList extends Component {
     }
 }
 
+// Allow props to be passed from outside
 if (document.getElementById('VideoList')) {
     const element = document.getElementById('VideoList');
     const props = Object.assign({}, element.dataset);

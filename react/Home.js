@@ -5,6 +5,7 @@ import VideoList from './VideoList';
 import axios, { post } from 'axios';
 import { status } from '../util/status';
 
+// The Home component contains a FileUploader and VideoList
 export default class Home extends Component {
     constructor(props) {
         super(props);
@@ -17,10 +18,12 @@ export default class Home extends Component {
         this.updateVideoList = this.updateVideoList.bind(this);
     }
 
+    // Call updateVideoList() when the component is mounted
     componentDidMount() {
       this.updateVideoList();
     }
 
+    // Refresh the video list
     updateVideoList() {
         this.setState({ status: status.FETCHING });
         this.updateVideos().then((response) => {
@@ -39,6 +42,7 @@ export default class Home extends Component {
         });
     }
 
+    // This make the AJAX call to fetch new video list
     updateVideos() {
       const url = 'http://localhost:8000/api/originalVideos';
       const formData = new FormData();
@@ -71,6 +75,7 @@ export default class Home extends Component {
     }
 }
 
+// Allow props to be passed from outside
 if (document.getElementById('Home')) {
     const element = document.getElementById('Home');
     const props = Object.assign({}, element.dataset);
