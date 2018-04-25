@@ -17,8 +17,8 @@ class UserController extends Controller
     | User Controller
     |--------------------------------------------------------------------------
     |
-    | This controller handles the API requests for viewing user information,
-    | updating user information, and deletion of user.
+    | This controller handles viewing of user information, updating user information,
+    | validating new user information.
     |
     */
 
@@ -30,7 +30,7 @@ class UserController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing the specified user.
      *
      * @param  int  $id
      * @return \Illuminate\Http\Response
@@ -65,7 +65,7 @@ class UserController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified user in storage.
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
@@ -78,7 +78,7 @@ class UserController extends Controller
         $user = User::find($id);
 
         foreach ($input as $key => $value) {
-            // Change filled out inputs that are different values from before
+            // Change non-empty inputs that are different values from before.
             if ($value && $user->key != $value) {
                 $user->$key = $key=='password' ? Hash::make($value) : $value;
             }
@@ -87,20 +87,5 @@ class UserController extends Controller
         Session::flash('success', 'Settings changed successfully!');
 
         return redirect()->back();
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        $user = User::findOrFail($id);
-        
-        $user->delete();
-
-        return response()->json(User::all());
     }
 }

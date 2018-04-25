@@ -13,11 +13,23 @@ use FFMpeg;
 
 class OriginalVideoController extends Controller
 {
+    /*
+    |--------------------------------------------------------------------------
+    | Original Video Controller
+    |--------------------------------------------------------------------------
+    |
+    | This controller handles request for viewing user video list, validating video
+    | uploads, storing video locally, storing video information and data in the database, 
+    | and processing the video (image extraction -> face detection -> recreate video -> output).
+    |
+    */
+    
     public $ffmpeg_path;
     public $ffmprope_path;
 
     public function __construct()
     {
+        // Configure ffmpeg path for different OS.
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             $this->ffmpeg_path = 'C:/FFMpeg/bin/ffmpeg.exe';
             $this->ffmprope_path = 'C:/FFMpeg/bin/ffprobe.exe';
@@ -28,53 +40,46 @@ class OriginalVideoController extends Controller
     }
 
     /**
-     * Display a listing of the resource.
+     * Display a listing of the videos.
      *
      * @return \Illuminate\Http\Response
      */
     public function index(Request $request)
     {
+        // Validate API token
         $token = $request->token;
         $user = User::where('api_token', $token)->firstOrFail();
+
+        // Get the user's videos
         $video = OriginalVideo::where('user_id', $user->id)
             ->orderBy('updated_at', 'desc')
             ->get();
+
         return OriginalVideoResource::collection($video);
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
+     * Store a newly created video in storage.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
     {
+        // Validate API token
         $token = $request->token;
         $user = User::where('api_token', $token)->firstOrFail();
 
-        // Check file size
+        // Validate file size
         $file = $request->file('file');
-        Log::info('uploaded file size: '.$file->getClientSize());
-        Log::info('max file size: '.$file->getMaxFilesize());
         if ($file->getClientSize() > $file->getMaxFilesize()
             || $file->getClientSize() === 0) {
-            return response('File size too large. Max file size is 2 MB.', 400);
+            return response('File size too large. Max file size is'.$file->getMaxFileSize().' MB.', 400);
         }
 
-        // Check mp4 file
+        // Validate file type
         $validator = Validator::make($request->all(), [
-                'file'  => 'required|mimes:mp4|max:2000',
+                'file'  => 'required|mimes:mp4',
             ]
         );
 
@@ -86,11 +91,13 @@ class OriginalVideoController extends Controller
             return response()->json($errors, 400);
         }
 
+        // Setup ffmpeg
         $ffprobe = \FFMpeg\FFProbe::create([
             'ffmpeg.binaries'  => $this->ffmpeg_path,
             'ffprobe.binaries' => $this->ffmprope_path,
         ]);
 
+        // Get video metadata
         try {
             $info = $ffprobe
             ->streams($request->file)
@@ -114,43 +121,28 @@ class OriginalVideoController extends Controller
         $video->height = $info->get('height');
         $video->user_id = $user->id;
 
+        // Process and recreate video
         if ($video->save()) {
             $path = $request
                 ->file('file')
                 ->storeAs('public/original_videos', $video->id.'.mp4');
-            //TODO choose a better frame rate
-            $this->extractImages($request->file, $video->id, 20);
+            $this->extractImages($request->file, $video->id, $fps);
             $this->processImages($video->id);
-            $this->createVideo($video->id, 20);
+            $this->createVideo($video->id, $fps);
             return new OriginalVideoResource($video);
         } else {
-            Log::warning('failed to save video');
+            Log::warning('Failed to save video.');
         }
         return response('Failed to process video.', 400);
     }
 
     private function extractImages($file, $id, $frame_rate)
     {
-        // $ffmpeg = \FFMpeg\FFMpeg::create([
-        //     'ffmpeg.binaries'  => $this->ffmpeg_path,
-        //     'ffprobe.binaries' => $this->ffmprope_path,
-        // ]);
-        // $ffmpeg_video = $ffmpeg->open($file);
-
         $video_path = "storage/original_videos/$id.mp4";
         $path = "storage/original_images/$id";
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         }
-
-        // // TODO wait for PHP-FFMpeg to fix the bug which produces duplicate files
-        // $ffmpeg_video
-        //     ->filters()
-        //     ->extractMultipleFrames($frame_rate, $path)
-        //     ->synchronize();
-        // $ffmpeg_video
-        //     ->save(new FFMpeg\Format\Video\X264(), "$path/output_%d.png");
-
         exec("ffmpeg -i $video_path -vf fps=$frame_rate $path/%05d.png");
     }
 
@@ -175,7 +167,7 @@ class OriginalVideoController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified video.
      *
      * @param  int
      * @return \Illuminate\Http\Response
@@ -187,30 +179,7 @@ class OriginalVideoController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
+     * Remove the specified video from storage.
      *
      * @param  int  $id
      * @return \Illuminate\Http\Response
